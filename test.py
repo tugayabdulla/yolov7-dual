@@ -101,17 +101,21 @@ def test(data,
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
-    for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
-        img = img.to(device, non_blocking=True)
-        img = img.half() if half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
+    for batch_i, (rgb_image, thermal_image, targets, rgb_path, thermal_path, shapes) in enumerate(tqdm(dataloader, desc=s)):
+        rgb_image = rgb_image.to(device, non_blocking=True)
+        thermal_image = thermal_image.to(device, non_blocking=True)
+        rgb_image = rgb_image.half() if half else rgb_image.float()  # uint8 to fp16/32
+        thermal_image = thermal_image.half() if half else thermal_image.float()  # uint8 to fp16/32
+        rgb_image /= 255.0  # 0 - 255 to 0.0 - 1.0
+        thermal_image /= 255.0  # 0 - 255 to 0.0 - 1.0
+
         targets = targets.to(device)
-        nb, _, height, width = img.shape  # batch size, channels, height, width
+        nb, _, height, width = rgb_image.shape  # batch size, channels, height, width
 
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            out, train_out = model(img, augment=augment)  # inference and training outputs
+            out, train_out = model((rgb_image, thermal_image), augment=augment)  # inference and training outputs
             t0 += time_synchronized() - t
 
             # Compute loss
@@ -130,7 +134,7 @@ def test(data,
             labels = targets[targets[:, 0] == si, 1:]
             nl = len(labels)
             tcls = labels[:, 0].tolist() if nl else []  # target class
-            path = Path(paths[si])
+            path = Path(rgb_path[si])
             seen += 1
 
             if len(pred) == 0:
@@ -140,7 +144,7 @@ def test(data,
 
             # Predictions
             predn = pred.clone()
-            scale_coords(img[si].shape[1:], predn[:, :4], shapes[si][0], shapes[si][1])  # native-space pred
+            scale_coords(rgb_image[si].shape[1:], predn[:, :4], shapes[si][0], shapes[si][1])  # native-space pred
 
             # Append to text file
             if save_txt:
@@ -160,7 +164,7 @@ def test(data,
                                  "scores": {"class_score": conf},
                                  "domain": "pixel"} for *xyxy, conf, cls in pred.tolist()]
                     boxes = {"predictions": {"box_data": box_data, "class_labels": names}}  # inference-space
-                    wandb_images.append(wandb_logger.wandb.Image(img[si], boxes=boxes, caption=path.name))
+                    wandb_images.append(wandb_logger.wandb.Image(rgb_image[si], boxes=boxes, caption=path.name))
             wandb_logger.log_training_progress(predn, path, names) if wandb_logger and wandb_logger.wandb_run else None
 
             # Append to pycocotools JSON dictionary
@@ -183,7 +187,7 @@ def test(data,
 
                 # target boxes
                 tbox = xywh2xyxy(labels[:, 1:5])
-                scale_coords(img[si].shape[1:], tbox, shapes[si][0], shapes[si][1])  # native-space labels
+                scale_coords(rgb_image[si].shape[1:], tbox, shapes[si][0], shapes[si][1])  # native-space labels
                 if plots:
                     confusion_matrix.process_batch(predn, torch.cat((labels[:, 0:1], tbox), 1))
 
@@ -214,9 +218,9 @@ def test(data,
         # Plot images
         if plots and batch_i < 3:
             f = save_dir / f'test_batch{batch_i}_labels.jpg'  # labels
-            Thread(target=plot_images, args=(img, targets, paths, f, names), daemon=True).start()
+            Thread(target=plot_images, args=(rgb_image, targets, rgb_path, f, names), daemon=True).start()
             f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions
-            Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names), daemon=True).start()
+            Thread(target=plot_images, args=(rgb_image, output_to_target(out), rgb_path, f, names), daemon=True).start()
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
