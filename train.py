@@ -332,7 +332,7 @@ def train(hyp, opt, device, tb_writer=None):
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
-        for i, (rgb_images, thermal_images, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
+        for i, (rgb_images, thermal_images, targets, rgb_path, thermal_path, _) in pbar:  # batch -------------------------------------------------------------
             print('Batch:', i)
             ni = i + nb * epoch  # number integrated batches (since train start)
             rgb_images = rgb_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
@@ -392,7 +392,8 @@ def train(hyp, opt, device, tb_writer=None):
                 # Plot
                 if plots and ni < 10:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
-                    Thread(target=plot_images, args=(rgb_images, targets, paths[0], f), daemon=True).start()
+                    print(rgb_path)
+                    Thread(target=plot_images, args=(rgb_images, targets, rgb_path, f), daemon=True).start()
                     # if tb_writer:
                     #     tb_writer.add_image(f, result, dataformats='HWC', global_step=epoch)
                     #     tb_writer.add_graph(torch.jit.trace(model, imgs, strict=False), [])  # add model graph
