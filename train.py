@@ -333,7 +333,6 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
         for i, (rgb_images, thermal_images, targets, rgb_path, thermal_path, _) in pbar:  # batch -------------------------------------------------------------
-            print('Batch:', i)
             ni = i + nb * epoch  # number integrated batches (since train start)
             rgb_images = rgb_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
             thermal_images = thermal_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0

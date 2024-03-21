@@ -672,7 +672,7 @@ class Model(nn.Module):
         thermal_y = y
         thermal_dt = dt
         thermal_last_x = x
-        y = [torch.max(r, t) for r, t in zip(rgb_y, thermal_y)]
+        y = [torch.div(torch.add(r, t),2) for r, t in zip(rgb_y, thermal_y)]
         x = y[-1]
         for m in self.head:
             if m.f != -1:  # if not from previous layer
