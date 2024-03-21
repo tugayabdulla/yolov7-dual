@@ -193,6 +193,7 @@ class LoadImages:  # for inference
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
+        print("inside next")
 
         return path, img, img0, self.cap
 
@@ -564,6 +565,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
             # MixUp https://arxiv.org/pdf/1710.09412.pdf
             if random.random() < hyp['mixup']:
+                # tugaytodo
                 if random.random() < 0.8:
                     img2, labels2 = load_mosaic(self, random.randint(0, len(self.labels) - 1))
                 else:
@@ -573,18 +575,21 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 labels = np.concatenate((labels, labels2), 0)
 
         else:
-            # tugaytodo
             # Load image
             img, (h0, w0), (h, w) = load_image(self, index)
 
+            imgs = load_image(self, index)
             # Letterbox
             shape = self.batch_shapes[self.batch[index]] if self.rect else self.img_size  # final letterboxed shape
-            img, ratio, pad = letterbox(img, shape, auto=False, scaleup=self.augment)
-            shapes = (h0, w0), ((h / h0, w / w0), pad)  # for COCO mAP rescaling
+            
+            for i ,(img, (h0, w0), (h, w))  in enumerate(imgs): 
+                img, ratio, pad = letterbox(img, shape, auto=False, scaleup=self.augment)
+                shapes = (h0, w0), ((h / h0, w / w0), pad)  # for COCO mAP rescaling
 
-            labels = self.labels[index].copy()
-            if labels.size:  # normalized xywh to pixel xyxy format
-                labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
+                labels = self.labels[index].copy()
+                if labels.size:  # normalized xywh to pixel xyxy format
+                    labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
+                imgs[i] = img
 
         if self.augment:
             # Augment imagespace
