@@ -354,7 +354,7 @@ class TracedModel(nn.Module):
         self.model.to('cpu')
         self.model.eval()
 
-        self.detect_layer = self.model.model[-1]
+        self.detect_layer = self.model.head[-1]
         self.model.traced = True
         
         rand_example = torch.rand(1, 3, img_size, img_size)

@@ -64,10 +64,10 @@ if __name__ == '__main__':
                 m.act = SiLU()
         # elif isinstance(m, models.yolo.Detect):
         #     m.forward = m.forward_export  # assign forward (optional)
-    model.model[-1].export = not opt.grid  # set Detect() layer grid export
+    model.head[-1].export = not opt.grid  # set Detect() layer grid export
     y = model(img)  # dry run
     if opt.include_nms:
-        model.model[-1].include_nms = True
+        model.head[-1].include_nms = True
         y = None
 
     # TorchScript export
@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 else:
                     output_names = ['output']
             else:
-                model.model[-1].concat = True
+                model.head[-1].concat = True
 
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
                           output_names=output_names,
