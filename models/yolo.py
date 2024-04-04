@@ -720,12 +720,11 @@ class Model(nn.Module):
         thermal_dt = dt
         thermal_last_x = x
         
-        print(self.fuse_layers)
         x = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         for m in self.head:
             if m.f != -1:  # if not from previous layer
                 if isinstance(m.f, int):
-                    if m.f > len(rgb_y):
+                    if m.f > len(rgb_y) or m.f <0:
                         x = y[m.f]
                     else:
                         print("m.f", m.f)
@@ -969,10 +968,12 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f] // args[0] ** 2
         else:
             c2 = ch[f]
-        if f != -1 and isinstance(f, int):
+        if f != -1 and isinstance(f, int) and f > 0:
             c2_ = ch[f]
             fuse_layer = BGF(c2_)
             fuse_layers[f] = fuse_layer
+
+
         m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
         np = sum([x.numel() for x in m_.parameters()])  # number params
@@ -992,6 +993,7 @@ def parse_model_new(d, ch):
     fusion_layer = BGF(ch[-1])
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = fusion_layer 
+    print("len of fuse_layers", len(fuse_layers))
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,
