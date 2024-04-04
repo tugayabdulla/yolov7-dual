@@ -720,7 +720,7 @@ class Model(nn.Module):
         thermal_dt = dt
         thermal_last_x = x
         
-        
+        print(self.fuse_layers)
         x = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         for m in self.head:
             if m.f != -1:  # if not from previous layer
@@ -728,6 +728,7 @@ class Model(nn.Module):
                     if m.f > len(rgb_y):
                         x = y[m.f]
                     else:
+                        print("m.f", m.f)
                         print("x.shape", x.shape)
                         x = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
                         print("after fuse x.shape", x.shape)
