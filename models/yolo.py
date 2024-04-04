@@ -537,7 +537,7 @@ class BGF(nn.Module):
         thermal_features_mult = thermal_features_left * thermal_features_right
         thermal_features = thermal_features + thermal_features_mult
 
-        concat = self.concat(rgb_features, thermal_features)      
+        concat = self.concat([rgb_features, thermal_features])      
         concat = self.fusion_conv(concat)
         
         return concat
