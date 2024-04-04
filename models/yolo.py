@@ -965,8 +965,8 @@ def parse_model_parts(part, ch, d):
         else:
             c2 = ch[f]
         if f != -1 and isinstance(f, int):
-            c2 = ch[f]
-            fuse_layer = BGF(c2)
+            c2_ = ch[f]
+            fuse_layer = BGF(c2_)
             fuse_layers[f] = fuse_layer
         m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
