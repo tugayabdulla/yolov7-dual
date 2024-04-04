@@ -510,14 +510,14 @@ class BGF(nn.Module):
         self.sigmoid_rgb = nn.Sigmoid()
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
-        self.rgb_conv1 = Conv(c1=in_channels, c2=in_channels *2 , k=3, s=1, p=1)
-        self.rgb_conv2 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
-        self.rgb_conv3 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
+        self.rgb_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1)
+        self.rgb_conv2 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.rgb_conv3 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
         
-        self.thermal_conv1 = Conv(c1=in_channels, c2=in_channels*2, k=3, s=1, p=1)
-        self.thermal_conv2 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
-        self.thermal_conv3 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
-        self.fusion_conv = Conv(c1=in_channels*4, c2=in_channels, k=3, s=1, p=1)
+        self.thermal_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv2 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv3 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.fusion_conv = nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
 
         self.concat = Concat()
 
