@@ -506,6 +506,7 @@ class IBin(nn.Module):
 
 class BGF(nn.Module):
     def __init__(self, in_channels):
+        super(BGF, self).__init__()
         self.sigmoid_rgb = nn.Sigmoid()
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
