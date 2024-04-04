@@ -511,7 +511,7 @@ class BGF(nn.Module):
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
         self.rgb_conv1 = Conv(c1=in_channels, c2=in_channels *2 , k=3, s=1, p=1)
-        self.rgb_conv2 = Conv(c2=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
+        self.rgb_conv2 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
         self.rgb_conv3 = Conv(c1=in_channels*2, c2=in_channels*2, k=3, s=1, p=1)
         
         self.thermal_conv1 = Conv(c1=in_channels, c2=in_channels*2, k=3, s=1, p=1)
