@@ -507,7 +507,6 @@ class IBin(nn.Module):
 class BGF(nn.Module):
     def __init__(self, in_channels):
         super(BGF, self).__init__()
-        print("in channels", in_channels)
         self.sigmoid_rgb = nn.Sigmoid()
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
@@ -539,9 +538,7 @@ class BGF(nn.Module):
         thermal_features = thermal_features + thermal_features_mult
 
         concat = self.concat([rgb_features, thermal_features])  
-        print("concat shape before", concat.shape)    
         concat = self.fusion_conv(concat)
-        print("concat shape", concat.shape)
         return concat
 
 
@@ -571,7 +568,7 @@ class Model(nn.Module):
         self.backbone_rgb = self.model['backbone_rgb']
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
-        self.fuse_layers = self.model['fuse_layers']
+        f1, f2, f3 = self.model['fuse_layers'].values()
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -727,10 +724,7 @@ class Model(nn.Module):
                     if m.f > len(rgb_y) or m.f <0:
                         x = y[m.f]
                     else:
-                        print("m.f", m.f)
-                        print("x.shape", x.shape)
                         x = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
-                        print("after fuse x.shape", x.shape)
                 else:
                     x = [y[j] if j != -1 else x for j in m.f]
 
@@ -909,6 +903,7 @@ def parse_model_parts(part, ch, d):
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
     fuse_layers = {}
+    len_ch = len(ch)
     for i, (f, n, m, args) in enumerate(d[part]):  # from, number, module, args
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
@@ -968,7 +963,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f] // args[0] ** 2
         else:
             c2 = ch[f]
-        if f != -1 and isinstance(f, int) and f > 0:
+        if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
             fuse_layer = BGF(c2_)
             fuse_layers[f] = fuse_layer
@@ -993,7 +988,6 @@ def parse_model_new(d, ch):
     fusion_layer = BGF(ch[-1])
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = fusion_layer 
-    print("len of fuse_layers", len(fuse_layers))
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,
