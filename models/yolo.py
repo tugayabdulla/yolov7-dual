@@ -568,7 +568,8 @@ class Model(nn.Module):
         self.backbone_rgb = self.model['backbone_rgb']
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
-        f1, f2, f3 = self.model['fuse_layers'].values()
+        self.fuse_layers = self.model['fuse_layers']
+        self.f1, self.f2, self.f3 = self.model['fuse_layers'].values()
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
