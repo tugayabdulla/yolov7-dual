@@ -504,6 +504,45 @@ class IBin(nn.Module):
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
+class BGF(nn.Module):
+    def __init__(self, in_channels):
+        self.sigmoid_rgb = nn.Sigmoid()
+        self.sigmoid_thermal= nn.Sigmoid()
+        # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
+        self.rgb_conv1 = Conv(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1)
+        self.rgb_conv2 = Conv(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.rgb_conv3 = Conv(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        
+        self.thermal_conv1 = Conv(in_channels=in_channels, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv2 = Conv(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv3 = Conv(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.fusion_conv = Conv(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
+
+        self.concat = Concat()
+
+    def forward(self, rgb_features, thermal_features):
+
+        rgb_features = self.rgb_conv1(rgb_features)
+        rgb_features_left = self.rgb_conv2(rgb_features)
+        rgb_features_right = self.rgb_conv3(rgb_features)
+        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
+        rgb_features_mult = rgb_features_left * rgb_features_right
+        rgb_features = rgb_features + rgb_features_mult
+
+        thermal_features = self.thermal_conv1(thermal_features)
+        thermal_features_left = self.thermal_conv2(thermal_features)
+        thermal_features_right = self.thermal_conv3(thermal_features)
+        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+        thermal_features_mult = thermal_features_left * thermal_features_right
+        thermal_features = thermal_features + thermal_features_mult
+
+        concat = self.concat(rgb_features, thermal_features)      
+        concat = self.fusion_conv(concat)
+        
+        return concat
+
+
+
 
 class Model(nn.Module):
     def __init__(self, cfg='yolor-csp-c.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
@@ -529,6 +568,7 @@ class Model(nn.Module):
         self.backbone_rgb = self.model['backbone_rgb']
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
+        self.fuse_layers = self.model['fuse_layers']
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -611,6 +651,10 @@ class Model(nn.Module):
         else:
             return self.forward_once_new(x, profile)  # single-scale inference, train
 
+   # def fuse(self, thermal, rgb):
+        
+
+
     def forward_once_new(self, x, profile=False):
         y, dt = [], []  # outputs
         rgb_x, thermal_x = x
@@ -673,11 +717,15 @@ class Model(nn.Module):
         thermal_dt = dt
         thermal_last_x = x
         y = [torch.div(torch.add(r, t),2) for r, t in zip(rgb_y, thermal_y)]
-        x = y[-1]
+        
+        x = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         for m in self.head:
             if m.f != -1:  # if not from previous layer
                 if isinstance(m.f, int):
-                    x = y[m.f]
+                    if m.f > len(rgb_y):
+                        x = y[m.f]
+                    else:
+                        x = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
                 else:
                     x = [y[j] if j != -1 else x for j in m.f]
 
@@ -855,6 +903,7 @@ def parse_model_parts(part, ch, d):
     na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
+    fuse_layers = {}
     for i, (f, n, m, args) in enumerate(d[part]):  # from, number, module, args
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
@@ -914,7 +963,10 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f] // args[0] ** 2
         else:
             c2 = ch[f]
-
+        if f != -1:
+            c2 = ch[f]
+            fuse_layer = BGF(c2)
+            fuse_layers[f] = fuse_layer
         m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
         np = sum([x.numel() for x in m_.parameters()])  # number params
@@ -925,17 +977,20 @@ def parse_model_parts(part, ch, d):
         #if i == 0:
         #    ch = []
         ch.append(c2)
-    return nn.Sequential(*layers), sorted(save), ch
+    return nn.Sequential(*layers), sorted(save), ch, fuse_layers
 
 
 def parse_model_new(d, ch):
-    backbone_rgb, save_rgb, _ = parse_model_parts('backbone', deepcopy(ch), d)
-    backbone_thermal, save_thermal, ch = parse_model_parts('backbone', deepcopy(ch), d)
-    head, save_head, _ = parse_model_parts('head', ch[1:], d)
+    backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
+    backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
+    fusion_layer = BGF(ch[-1])
+    head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
+    fuse_layers[-1] = fusion_layer 
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,
-        'head': head
+        'head': head,
+        'fuse_layers': fuse_layers
     }
     save = {
         'rgb': save_rgb,
