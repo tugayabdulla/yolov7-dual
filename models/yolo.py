@@ -717,7 +717,7 @@ class Model(nn.Module):
         thermal_y = y
         thermal_dt = dt
         thermal_last_x = x
-        y = [torch.div(torch.add(r, t),2) for r, t in zip(rgb_y, thermal_y)]
+        
         
         x = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         for m in self.head:
@@ -726,7 +726,9 @@ class Model(nn.Module):
                     if m.f > len(rgb_y):
                         x = y[m.f]
                     else:
+                        print("x.shape", x.shape)
                         x = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
+                        print("after fuse x.shape", x.shape)
                 else:
                     x = [y[j] if j != -1 else x for j in m.f]
 
