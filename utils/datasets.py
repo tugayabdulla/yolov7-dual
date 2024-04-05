@@ -605,7 +605,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
             # Augment colorspace
             
-            augment_hsv(imgs, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            # augment_hsv(imgs, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -1151,8 +1151,6 @@ def random_perspective(img_label_segments, degrees=10, translate=.1, scale=.1, s
         targets[:, 1:5] = new[i]
     
     return return_list, targets
-
-
 
 
 def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1, eps=1e-16):  # box1(4,n), box2(4,n)
