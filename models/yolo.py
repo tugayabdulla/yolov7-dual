@@ -724,10 +724,8 @@ class Model(nn.Module):
                     if m.f > len(rgb_y) or m.f <0:
                         pass 
                     else:
-                        print(m.f)
                         y[m.f] = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
 
-        print("length of rgb_y", len(rgb_y))
         x=y[-1]
         for m in self.head:
             if m.f != -1:  # if not from previous layer
@@ -915,9 +913,7 @@ def parse_model_parts(part, ch, d):
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
     fuse_layers = {}
     len_ch = len(ch)
-    print(f"len_ch is {len_ch}")
     for i, (f, n, m, args) in enumerate(d[part]):  # from, number, module, args
-        print(f"f is {f}")
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
             try:
@@ -977,7 +973,6 @@ def parse_model_parts(part, ch, d):
         else:
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
-            print(f"fuse layer {f}")
             c2_ = ch[f]
             fuse_layer = BGF(c2_)
             fuse_layers[f] = fuse_layer
