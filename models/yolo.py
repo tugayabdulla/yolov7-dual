@@ -569,7 +569,7 @@ class Model(nn.Module):
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
         self.fuse_layers = self.model['fuse_layers']
-        self.f1, self.f2, self.f3 = self.model['fuse_layers'].values()
+        self.f1, self.f2 = self.model['fuse_layers'].values()
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -717,7 +717,7 @@ class Model(nn.Module):
         thermal_y = y
         thermal_dt = dt
         thermal_last_x = x
-        
+        print(self.fuse_layers.keys())
         x = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         for m in self.head:
             if m.f != -1:  # if not from previous layer
