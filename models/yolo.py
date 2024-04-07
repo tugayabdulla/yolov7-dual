@@ -906,6 +906,7 @@ def parse_model_parts(part, ch, d):
     fuse_layers = {}
     len_ch = len(ch)
     for i, (f, n, m, args) in enumerate(d[part]):  # from, number, module, args
+        print(f"f is {f}")
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
             try:
