@@ -965,6 +965,7 @@ def parse_model_parts(part, ch, d):
         else:
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
+            print(f"fuse layer {f}")
             c2_ = ch[f]
             fuse_layer = BGF(c2_)
             fuse_layers[f] = fuse_layer
