@@ -558,12 +558,12 @@ class BGF(nn.Module):
     def forward(self, rgb_features, thermal_features):
 
         rgb_features = self.rgb_conv1(rgb_features)
-        thermal_features_left = self.thermal_conv2(thermal_features)
-
+        thermal_features = self.thermal_conv1(thermal_features)
         rgb_features_left = self.rgb_conv2(rgb_features)
-        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+        thermal_features_left = self.thermal_conv2(thermal_features)
         rgb_features_left = self.sigmoid_rgb(rgb_features_left)
-        rgb_features_mult = rgb_features_left * rgb_features
+        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+
 
 
         rgb_features_right = self.rgb_conv3(rgb_features)
