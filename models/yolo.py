@@ -510,43 +510,48 @@ class BGF(nn.Module):
         self.sigmoid_rgb = nn.Sigmoid()
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
-        self.rgb_conv1 = nn.Sequential([
+        self.rgb_conv1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(in_channels*2),
 
-        ])
+        )
         
-        self.thermal_conv1 = nn.Sequential([
+        self.thermal_conv1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(in_channels*2),
 
-        ])
+        )
 
-        self.rgb_conv2 = nn.Sequential([
+        self.rgb_conv2 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
-        ])
+        )
 
-        self.thermal_conv2 = nn.Sequential([
+        self.thermal_conv2 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
-        ])
+        )
         
         
-        self.rgb_conv3 = nn.Sequential([
+        self.rgb_conv3 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(in_channels*2),
-        ])
+        )
 
-        self.thermal_conv3 = nn.Sequential([
+        self.thermal_conv3 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(in_channels*2),
-        ])
+        )
        
-       
-        self.fusion_conv = nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
+        self.fusion_conv = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU(inplace=True),
+        )
+
+
 
         self.concat = Concat()
 
