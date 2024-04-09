@@ -510,13 +510,42 @@ class BGF(nn.Module):
         self.sigmoid_rgb = nn.Sigmoid()
         self.sigmoid_thermal= nn.Sigmoid()
         # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
-        self.rgb_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1)
-        self.rgb_conv2 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
-        self.rgb_conv3 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.rgb_conv1 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels*2),
+
+        ])
         
-        self.thermal_conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
-        self.thermal_conv2 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
-        self.thermal_conv3 = nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1)
+        self.thermal_conv1 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels*2),
+
+        ])
+
+        self.rgb_conv2 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+        ])
+
+        self.thermal_conv2 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+        ])
+        
+        
+        self.rgb_conv3 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels*2),
+        ])
+
+        self.thermal_conv3 = nn.Sequential([
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels*2),
+        ])
+       
+       
         self.fusion_conv = nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1)
 
         self.concat = Concat()
@@ -524,18 +553,26 @@ class BGF(nn.Module):
     def forward(self, rgb_features, thermal_features):
 
         rgb_features = self.rgb_conv1(rgb_features)
-        rgb_features_left = self.rgb_conv2(rgb_features)
-        rgb_features_right = self.rgb_conv3(rgb_features)
-        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
-        rgb_features_mult = rgb_features_left * rgb_features_right
-        rgb_features = rgb_features + rgb_features_mult
-
-        thermal_features = self.thermal_conv1(thermal_features)
         thermal_features_left = self.thermal_conv2(thermal_features)
-        thermal_features_right = self.thermal_conv3(thermal_features)
+
+        rgb_features_left = self.rgb_conv2(rgb_features)
         thermal_features_left = self.sigmoid_thermal(thermal_features_left)
-        thermal_features_mult = thermal_features_left * thermal_features_right
+        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
+        rgb_features_mult = rgb_features_left * rgb_features
+
+
+        rgb_features_right = self.rgb_conv3(rgb_features)
+        thermal_features_right = self.thermal_conv3(thermal_features)
+
+
+
+
+
+        rgb_features_mult = rgb_features_left * thermal_features_right
+        thermal_features_mult = thermal_features_left * rgb_features_right
+        rgb_features = rgb_features + rgb_features_mult
         thermal_features = thermal_features + thermal_features_mult
+
 
         concat = self.concat([rgb_features, thermal_features])  
         concat = self.fusion_conv(concat)
