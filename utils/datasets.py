@@ -605,7 +605,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
             # Augment colorspace
             
-            # augment_hsv(imgs, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            augment_hsv(imgs, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -728,7 +728,7 @@ def augment_hsv(imgs, hgain=0.5, sgain=0.5, vgain=0.5):
 
         img_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val))).astype(dtype)
         cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
-
+        break
 
 def hist_equalize(img, clahe=True, bgr=False):
     # Equalize histogram on BGR image 'img' with img.shape(n,m,3) and range 0-255
