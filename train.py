@@ -96,6 +96,16 @@ def train(hyp, opt, device, tb_writer=None):
         state_dict_thermal = {k.replace('model', 'backbone_thermal'): v for k, v in state_dict_thermal.items()}
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
+        
+        state_dict.update(state_dict_thermal)
+        
+        
+        print(f"Found {len(state_dict)} keys in the pretrained model - RGB")
+        print(f"Found {len(state_dict_thermal)} keys in the pretrained model - Thermal")
+        #state_dict_neck = ckpt['model'].float().state_dict()
+        #state_dict_neck = {k.replace('model', 'neck'): v for k, v in state_dict_neck.items()}
+        #state_dict_neck = intersect_dicts(state_dict_neck, model.state_dict(), exclude=exclude)
+        #print(f"Found {len(state_dict_neck)} keys in the pretrained model - Neck")
 
         model.load_state_dict(state_dict, strict=False)  # load
         logger.info('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
