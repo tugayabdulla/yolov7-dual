@@ -611,7 +611,7 @@ class Model(nn.Module):
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
         self.fuse_layers = self.model['fuse_layers']
-        self.f1= list(self.model['fuse_layers'].values())[0]
+        self.f1,self.f2, self.f3= list(self.model['fuse_layers'].values())
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -767,15 +767,12 @@ class Model(nn.Module):
                         pass 
                     else:
                         y[m.f] = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
-
+        y[-1] = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         x=y[-1]
         for m in self.head:
             if m.f != -1:  # if not from previous layer
                 if isinstance(m.f, int):
-                    if m.f > len(rgb_y) or m.f <0:
-                        x = y[m.f]
-                    else:
-                        x = y[m.f]
+                    x = y[m.f]
                 else:
                     x = [y[j] if j != -1 else x for j in m.f]
 
@@ -1036,7 +1033,11 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
+    last_fusion = BGF(ch[-1])
+
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
+    fuse_layers[-1] = last_fusion
+    print(len(fuse_layers))
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,

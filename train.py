@@ -82,13 +82,21 @@ def train(hyp, opt, device, tb_writer=None):
     # Model
     pretrained = weights.endswith('.pt')
     if pretrained:
+        print("Loading pretrained model")
         with torch_distributed_zero_first(rank):
             attempt_download(weights)  # download if not found locally
         ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        ckpt_thermal = torch.load(opt.thermal_weights, map_location=device)
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (opt.cfg or hyp.get('anchors')) and not opt.resume else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
+        state_dict_thermal = ckpt_thermal['model'].float().state_dict()
+        # replace a string in the keys of the state_dict
+        state_dict = {k.replace('model', 'backbone_rgb'): v for k, v in state_dict.items()}
+        state_dict_thermal = {k.replace('model', 'backbone_thermal'): v for k, v in state_dict_thermal.items()}
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
+        state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
+
         model.load_state_dict(state_dict, strict=False)  # load
         logger.info('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
@@ -528,6 +536,8 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='yolo7.pt', help='initial weights path')
+    parser.add_argument('--thermal-weights',type=str,  help='initial thermal weights path')
+
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.p5.yaml', help='hyperparameters path')
