@@ -321,18 +321,6 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
     torch.save(model, wdir / 'init.pt')
-    import torchvision.transforms.functional as TF
-
-    def save_image(tensor, filename):
-        # Check if tensor is on GPU
-        if tensor.is_cuda:
-            tensor = tensor.cpu()
-
-        # Convert to PIL Image
-        image = TF.to_pil_image(tensor.squeeze(0))  # Remove batch dimension and convert to PIL Image
-
-        # Save image
-        image.save(filename)
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
