@@ -260,9 +260,9 @@ def attempt_load(weights, map_location=None):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
         elif type(m) is Conv:
             m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-    print(vars(model))
+    print(vars(model).keys())
     if len(model) == 1:
-        return model.model.head[-1]  # return model
+        return model[0].model.head[-1]  # return model
     else:
         print('Ensemble created with %s\n' % weights)
         for k in ['names', 'stride']:
