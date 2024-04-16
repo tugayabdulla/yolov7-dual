@@ -610,10 +610,8 @@ class Model(nn.Module):
         self.backbone_rgb = self.model['backbone_rgb']
         self.backbone_thermal = self.model['backbone_thermal']
         self.head = self.model['head']
-        
-
-
-        self.f1,self.f2, self.f3=  self.model['fuse_0'], self.model['fuse_1'], self.model['fuse_2']
+        self.fuse_layers = self.model['fuse_layers']
+        self.f1,self.f2, self.f3= list(self.model['fuse_layers'].values())
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -906,10 +904,10 @@ class Model(nn.Module):
     def fuse(self):  # fuse model Conv2d() + BatchNorm2d() layers
         # clear
         print('Fusing layers... ')
-
+        
         for i, part in self.model.items():
-            print(part)
-            print(i)
+            if not isinstance(part, nn.Sequential):
+                continue
             for m in part.modules():
                 if isinstance(m, RepConv):
                     #print(f" fuse_repvgg_block")
@@ -1043,14 +1041,13 @@ def parse_model_new(d, ch):
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
+    print(len(fuse_layers))
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,
         'head': head,
+        'fuse_layers': fuse_layers
     }
-    for i in range(len(fuse_layers)):
-        model[f'fuse_{i}'] = fuse_layers[i]
-
     save = {
         'rgb': save_rgb,
         'thermal': save_thermal,
