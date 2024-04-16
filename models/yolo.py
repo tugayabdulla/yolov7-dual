@@ -905,8 +905,9 @@ class Model(nn.Module):
         # clear
         print('Fusing layers... ')
 
-        for part in self.model.values():
-
+        for i, part in self.model.items():
+            print(part)
+            print(i)
             for m in part.modules():
                 if isinstance(m, RepConv):
                     #print(f" fuse_repvgg_block")
