@@ -905,7 +905,7 @@ class Model(nn.Module):
         # clear
         print('Fusing layers... ')
 
-        for part in [self.model.values()]:
+        for part in self.model.values():
 
             for m in part.modules():
                 if isinstance(m, RepConv):
