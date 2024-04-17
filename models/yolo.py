@@ -676,7 +676,7 @@ class Model(nn.Module):
 
     def forward(self, x, augment=False, profile=False):
         if isinstance(x, torch.Tensor):
-            x0,x1 = torch.unbind(x, dim=0)
+            x0,x1 = x[0:1], x[1:2]
             x = (x0, x1)
 
         
