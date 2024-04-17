@@ -262,11 +262,11 @@ def attempt_load(weights, map_location=None):
             m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
     print(vars(model).keys())
     if len(model) == 1:
-        return model[0].head[-1]  # return model
+        return model[0].head  # return model
     else:
         print('Ensemble created with %s\n' % weights)
         for k in ['names', 'stride']:
-            setattr(model, k, getattr(model.head[-1], k))
+            setattr(model, k, getattr(model[0].head, k))
         return model  # return ensemble
 
 
