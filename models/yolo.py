@@ -618,7 +618,7 @@ class Model(nn.Module):
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
         # Build strides, anchors
-        m = self.head[-1]  # Detect()
+        m = self.model[-1]  # Detect()
         if isinstance(m, Detect):
             s = 256  # 2x min stride
             dummy = torch.zeros(1, ch, s, s)
@@ -771,7 +771,7 @@ class Model(nn.Module):
         thermal_dt = dt
         thermal_last_x = x
         
-        for m in self.head:
+        for m in self.model[-1]:
             if m.f != -1:  # if not from previous layer
                 if isinstance(m.f, int):
                     if m.f > len(rgb_y) or m.f <0:
@@ -851,7 +851,7 @@ class Model(nn.Module):
     def _initialize_biases(self, cf=None):  # initialize biases into Detect(), cf is class frequency
         # https://arxiv.org/abs/1708.02002 section 3.3
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1.
-        m = self.head[-1]  # Detect() module
+        m = self.model[-1]  # Detect() module
         for mi, s in zip(m.m, m.stride):  # from
             b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
             b.data[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
@@ -862,7 +862,7 @@ class Model(nn.Module):
         # https://arxiv.org/abs/1708.02002 section 3.3
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1.
         # clear
-        m = self.head[-1]  # Detect() module
+        m = self.model[-1]  # Detect() module
         for mi, mi2, s in zip(m.m, m.m2, m.stride):  # from
             b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
             b.data[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
@@ -877,7 +877,7 @@ class Model(nn.Module):
         # https://arxiv.org/abs/1708.02002 section 3.3
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1.
         # clear
-        m = self.head[-1]  # Bin() module
+        m = self.model[-1]  # Bin() module
         bc = m.bin_count
         for mi, s in zip(m.m, m.stride):  # from
             b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
@@ -893,7 +893,7 @@ class Model(nn.Module):
         # clear
         # https://arxiv.org/abs/1708.02002 section 3.3
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1.
-        m = self.head[-1]  # Detect() module
+        m = self.model[-1]  # Detect() module
         for mi, s in zip(m.m, m.stride):  # from
             b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
             b.data[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
@@ -902,7 +902,7 @@ class Model(nn.Module):
 
     def _print_biases(self):
         # ckear
-        m = self.head[-1]  # Detect() module
+        m = self.model[-1]  # Detect() module
         for mi in m.m:  # from
             b = mi.bias.detach().view(m.na, -1).T  # conv.bias(255) to (3,85)
             print(('%6g Conv2d.bias:' + '%10.3g' * 6) % (mi.weight.shape[1], *b[:5].mean(1).tolist(), b[5:].mean()))
@@ -937,17 +937,17 @@ class Model(nn.Module):
         return self
 
     def nms(self, mode=True):  # add or remove NMS module
-        present = type(self.head[-1]) is NMS  # last layer is NMS
+        present = type(self.model[-1]) is NMS  # last layer is NMS
         if mode and not present:
             print('Adding NMS... ')
             m = NMS()  # module
             m.f = -1  # from
-            m.i = self.head[-1].i + 1  # index
+            m.i = self.model[-1].i + 1  # index
             self.model.add_module(name='%s' % m.i, module=m)  # add
             self.eval()
         elif not mode and present:
             print('Removing NMS... ')
-            self.head = self.head[:-1]  # remove
+            self.model = self.model[:-1]  # remove
         return self
 
     def autoshape(self):  # add autoShape module
