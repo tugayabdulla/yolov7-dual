@@ -606,12 +606,14 @@ class Model(nn.Module):
         if anchors:
             logger.info(f'Overriding model.yaml anchors with anchors={anchors}')
             self.yaml['anchors'] = round(anchors)  # override yaml value
-        self.model, self.save = parse_model_new(deepcopy(self.yaml), ch=[ch])  # model, savelist
-        self.backbone_rgb = self.model['backbone_rgb']
-        self.backbone_thermal = self.model['backbone_thermal']
-        self.head = self.model['head']
-        self.fuse_layers = self.model['fuse_layers']
-        self.f1,self.f2, self.f3= list(self.model['fuse_layers'].values())
+
+        model, self.save = parse_model_new(deepcopy(self.yaml), ch=[ch])  # model, savelist
+        backbone_rgb = model['backbone_rgb']
+        backbone_thermal = model['backbone_thermal']
+        head = model['head']
+        self.fuse_layers = model['fuse_layers']
+        f1, f2, f3= list(self.fuse_layers.values())
+        self.model = nn.Sequential(backbone_rgb, backbone_thermal,f1, f2, f3, head)
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names - Doesn't do anything
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -676,10 +678,14 @@ class Model(nn.Module):
 
     def forward(self, x, augment=False, profile=False):
         if isinstance(x, torch.Tensor):
-            x0,x1 = x[0:1], x[1:2]
-            x = (x0, x1)
+            if (x.dim() == 4):
+                x0,x1 = x[0:1], x[1:2]
+                x = (x0, x1)
+            elif (x.dim() == 5):
+                x0, x1 = torch.unbind(x, dim=0)
+                print(x0.shape, x1.shape)
+                x = (x0, x1)
 
-        
         if augment:
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
@@ -707,7 +713,7 @@ class Model(nn.Module):
         y, dt = [], []  # outputs
         rgb_x, thermal_x = x
         x = rgb_x
-        for m in self.backbone_rgb:
+        for m in self.model[0]:
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
 
@@ -738,7 +744,7 @@ class Model(nn.Module):
         y, dt = [], []  # outputs
         x = thermal_x
         
-        for m in self.backbone_thermal:
+        for m in self.model[1]:
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
 
@@ -774,7 +780,7 @@ class Model(nn.Module):
                         y[m.f] = self.fuse_layers[m.f](rgb_y[m.f], thermal_y[m.f])
         y[-1] = self.fuse_layers[-1](rgb_last_x, thermal_last_x)
         x=y[-1]
-        for m in self.head:
+        for m in self.model[-1]:
             if m.f != -1:  # if not from previous layer
                 if isinstance(m.f, int):
                     x = y[m.f]
@@ -1046,7 +1052,6 @@ def parse_model_new(d, ch):
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
-    print(len(fuse_layers))
     model = {
         'backbone_rgb': backbone_rgb,
         'backbone_thermal': backbone_thermal,

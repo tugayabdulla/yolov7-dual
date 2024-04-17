@@ -108,14 +108,14 @@ def test(data,
         thermal_image = thermal_image.half() if half else thermal_image.float()  # uint8 to fp16/32
         rgb_image /= 255.0  # 0 - 255 to 0.0 - 1.0
         thermal_image /= 255.0  # 0 - 255 to 0.0 - 1.0
-
         targets = targets.to(device)
         nb, _, height, width = rgb_image.shape  # batch size, channels, height, width
 
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            out, train_out = model((rgb_image, thermal_image), augment=augment)  # inference and training outputs
+            input_ = torch.stack([rgb_image, thermal_image], dim=0)
+            out, train_out = model(input_, augment=augment)  # inference and training outputs
             t0 += time_synchronized() - t
 
             # Compute loss
