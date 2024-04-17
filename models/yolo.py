@@ -675,6 +675,10 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
+        if isinstance(x, torch.Tensor):
+            print(x.shape)
+
+        
         if augment:
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
