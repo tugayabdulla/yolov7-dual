@@ -92,8 +92,8 @@ def train(hyp, opt, device, tb_writer=None):
         state_dict = ckpt['model'].float().state_dict()  # to FP32
         state_dict_thermal = ckpt_thermal['model'].float().state_dict()
         # replace a string in the keys of the state_dict
-        state_dict = {k.replace('model', 'backbone_rgb'): v for k, v in state_dict.items()}
-        state_dict_thermal = {k.replace('model', 'backbone_thermal'): v for k, v in state_dict_thermal.items()}
+        state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
+        state_dict_thermal = {k.replace('model.', 'model.1.'): v for k, v in state_dict_thermal.items()}
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
         
