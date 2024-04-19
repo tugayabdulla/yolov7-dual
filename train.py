@@ -63,7 +63,11 @@ def train(hyp, opt, device, tb_writer=None):
     with open(opt.data) as f:
         data_dict = yaml.load(f, Loader=yaml.SafeLoader)  # data dict
     is_coco = opt.data.endswith('coco.yaml')
-
+    if not weights.endswith('.pt'):  
+        if opt.rgb_weights is not None:
+            opt.weights = opt.rgb_weights
+        else:
+            pass
     # Logging- Doing this before checking the dataset. Might update data_dict
     loggers = {'wandb': None}  # loggers dict
     if rank in [-1, 0]:
@@ -90,18 +94,24 @@ def train(hyp, opt, device, tb_writer=None):
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (opt.cfg or hyp.get('anchors')) and not opt.resume else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
-        state_dict_thermal = ckpt_thermal['model'].float().state_dict()
-        # replace a string in the keys of the state_dict
-        state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
-        state_dict_thermal = {k.replace('model.', 'model.1.'): v for k, v in state_dict_thermal.items()}
-        state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
-        state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
+
+        if opt.rgb_weights.endswith('.pt'):
+
+            
+            state_dict_thermal = ckpt_thermal['model'].float().state_dict()
+            # replace a string in the keys of the state_dict
+            state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
+            state_dict_thermal = {k.replace('model.', 'model.1.'): v for k, v in state_dict_thermal.items()}
+            state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
+            state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
+            
+            state_dict.update(state_dict_thermal)
         
-        state_dict.update(state_dict_thermal)
         
-        
-        print(f"Found {len(state_dict)} keys in the pretrained model - RGB")
-        print(f"Found {len(state_dict_thermal)} keys in the pretrained model - Thermal")
+            print(f"Found {len(state_dict)} keys in the pretrained model - RGB")
+            print(f"Found {len(state_dict_thermal)} keys in the pretrained model - Thermal")
+        else:
+            state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         #state_dict_neck = ckpt['model'].float().state_dict()
         #state_dict_neck = {k.replace('model', 'neck'): v for k, v in state_dict_neck.items()}
         #state_dict_neck = intersect_dicts(state_dict_neck, model.state_dict(), exclude=exclude)
@@ -546,6 +556,7 @@ def train(hyp, opt, device, tb_writer=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='yolo7.pt', help='initial weights path')
+    parser.add_argument('--rgb-weights',type=str,  help='initial thermal weights path')
     parser.add_argument('--thermal-weights',type=str,  help='initial thermal weights path')
 
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
