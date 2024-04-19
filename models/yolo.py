@@ -684,7 +684,6 @@ class Model(nn.Module):
                 x = (x0, x1)
             elif (x.dim() == 5):
                 x0, x1 = torch.unbind(x, dim=0)
-                print(x0.shape, x1.shape)
                 x = (x0, x1)
             else:
                 raise Exception(f'dim {x.dim()} is not 4 or 5')

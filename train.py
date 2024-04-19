@@ -386,7 +386,7 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Forward
             with amp.autocast(enabled=cuda):
-                x = (rgb_images, thermal_images)
+                input_ = torch.stack([rgb_images, thermal_images], dim=0)
                 pred = model(x)  # forward
                 if 'loss_ota' not in hyp or hyp['loss_ota'] == 1:
                     loss, loss_items = compute_loss_ota(pred, targets.to(device), rgb_images)  # loss scaled by batch_size
