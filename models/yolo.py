@@ -711,6 +711,7 @@ class Model(nn.Module):
 
 
     def forward_once_new(self, x, profile=False):
+        raise ValueError(f"{x.shape}")
         y, dt = [], []  # outputs
         rgb_x, thermal_x = x
         x = rgb_x
