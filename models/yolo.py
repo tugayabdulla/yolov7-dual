@@ -686,6 +686,8 @@ class Model(nn.Module):
                 x0, x1 = torch.unbind(x, dim=0)
                 print(x0.shape, x1.shape)
                 x = (x0, x1)
+            else:
+                raise Exception(f'dim {x.dim()} is not 4 or 5')
 
         if augment:
             img_size = x.shape[-2:]  # height, width
@@ -711,7 +713,6 @@ class Model(nn.Module):
 
 
     def forward_once_new(self, x, profile=False):
-        raise ValueError(f"{x.shape}")
         y, dt = [], []  # outputs
         rgb_x, thermal_x = x
         x = rgb_x
