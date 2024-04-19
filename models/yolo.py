@@ -913,29 +913,27 @@ class Model(nn.Module):
     #         if type(m) is Bottleneck:
     #             print('%10.3g' % (m.w.detach().sigmoid() * 2))  # shortcut weights
 
+
     def fuse(self):  # fuse model Conv2d() + BatchNorm2d() layers
-        # clear
         print('Fusing layers... ')
-        
-        for i, part in self.model.items():
-            if not isinstance(part, nn.Sequential):
-                continue
-            for m in part.modules():
-                if isinstance(m, RepConv):
-                    #print(f" fuse_repvgg_block")
-                    m.fuse_repvgg_block()
-                elif isinstance(m, RepConv_OREPA):
-                    #print(f" switch_to_deploy")
-                    m.switch_to_deploy()
-                elif type(m) is Conv and hasattr(m, 'bn'):
-                    m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
-                    delattr(m, 'bn')  # remove batchnorm
-                    m.forward = m.fuseforward  # update forward
-                elif isinstance(m, (IDetect, IAuxDetect)):
-                    m.fuse()
-                    m.forward = m.fuseforward
+        for m in self.model.modules():
+            print(type(m))
+            if isinstance(m, RepConv):
+                #print(f" fuse_repvgg_block")
+                m.fuse_repvgg_block()
+            elif isinstance(m, RepConv_OREPA):
+                #print(f" switch_to_deploy")
+                m.switch_to_deploy()
+            elif type(m) is Conv and hasattr(m, 'bn'):
+                m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
+                delattr(m, 'bn')  # remove batchnorm
+                m.forward = m.fuseforward  # update forward
+            elif isinstance(m, (IDetect, IAuxDetect)):
+                m.fuse()
+                m.forward = m.fuseforward
         self.info()
         return self
+
 
     def nms(self, mode=True):  # add or remove NMS module
         present = type(self.model[-1][-1]) is NMS  # last layer is NMS
