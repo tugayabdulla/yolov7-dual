@@ -386,6 +386,8 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Forward
             with amp.autocast(enabled=cuda):
+                print(rgb_images.shape, thermal_images.shape)
+
                 input_ = torch.stack([rgb_images, thermal_images], dim=0)
                 pred = model(input_)  # forward
                 if 'loss_ota' not in hyp or hyp['loss_ota'] == 1:
