@@ -230,7 +230,7 @@ class End2End(nn.Module):
         device = device if device else torch.device('cpu')
         assert isinstance(max_wh,(int)) or max_wh is None
         self.model = model.to(device)
-        self.model.head[-1].end2end = True
+        self.model.model[-1][-1].end2end = True
         self.patch_model = ONNX_TRT if max_wh is None else ONNX_ORT
         self.end2end = self.patch_model(max_obj, iou_thres, score_thres, max_wh, device, n_classes)
         self.end2end.eval()
@@ -260,13 +260,12 @@ def attempt_load(weights, map_location=None):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
         elif type(m) is Conv:
             m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-    print(vars(model).keys())
+    
     if len(model) == 1:
-        return model[0]  # return model
+        return model[-1]  # return model
     else:
         print('Ensemble created with %s\n' % weights)
         for k in ['names', 'stride']:
-            setattr(model, k, getattr(model[0], k))
+            setattr(model, k, getattr(model[-1], k))
         return model  # return ensemble
-
 
