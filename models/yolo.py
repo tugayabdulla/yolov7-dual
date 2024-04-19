@@ -619,7 +619,6 @@ class Model(nn.Module):
 
         # Build strides, anchors
         m = self.model[-1][-1]  # Detect()
-        print(type(m))
         if isinstance(m, Detect):
             s = 256  # 2x min stride
             dummy = torch.zeros(1, ch, s, s)
@@ -678,7 +677,6 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
-        print(type(x))
         if isinstance(x, torch.Tensor):
             print("inside")
             print(x.dim())
