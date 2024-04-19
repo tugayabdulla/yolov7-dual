@@ -589,6 +589,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 if labels.size:  # normalized xywh to pixel xyxy format
                     labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
                 imgs[i] = img
+                print(img.shape)
 
         if self.augment:
             # Augment imagespace
