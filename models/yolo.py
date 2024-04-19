@@ -678,7 +678,11 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
+        print(type(x))
         if isinstance(x, torch.Tensor):
+            print("inside")
+            print(x.dim())
+            print(x.shape)
             if (x.dim() == 4):
                 x0,x1 = x[0:1], x[1:2]
                 x = (x0, x1)
