@@ -917,7 +917,6 @@ class Model(nn.Module):
     def fuse(self):  # fuse model Conv2d() + BatchNorm2d() layers
         print('Fusing layers... ')
         for m in self.model.modules():
-            print(type(m))
             if isinstance(m, RepConv):
                 #print(f" fuse_repvgg_block")
                 m.fuse_repvgg_block()
