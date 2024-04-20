@@ -368,7 +368,6 @@ class TracedModel(nn.Module):
         print(" model is traced! \n") 
 
     def forward(self, x, augment=False, profile=False):
-        print(x.shape)
         out = self.model(x)
         out = self.detect_layer(out)
         return out
