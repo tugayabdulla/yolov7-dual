@@ -707,19 +707,15 @@ class Model(nn.Module):
         rgb_x, thermal_x = x
         x = rgb_x
         for m in self.model[0]:
-            print(m)
-            print(x.shape)
-            print(m.f)
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
-                print("inside", x.shape)
             if not hasattr(self, 'traced'):
                 self.traced=False
 
             if self.traced:
                 if isinstance(m, Detect) or isinstance(m, IDetect) or isinstance(m, IAuxDetect) or isinstance(m, IKeypoint):
                     break
-
+            print(profile)
             if profile:
                 c = isinstance(m, (Detect, IDetect, IAuxDetect, IBin))
                 o = thop.profile(m, inputs=(x.copy() if c else x,), verbose=False)[0] / 1E9 * 2 if thop else 0  # FLOPS
@@ -730,8 +726,12 @@ class Model(nn.Module):
                     m(x.copy() if c else x)
                 dt.append((time_synchronized() - t) * 100)
                 print('%10.1f%10.0f%10.1fms %-40s' % (o, m.np, dt[-1], m.type))
+
+            print("shape before", len(x))
             x = m(x)  # run
-            
+            print("shape after", x.shape)
+
+
             y.append(x) # if m.i in self.save["rgb"] else None)  # save output tugaytodo
         rgb_last_x = x
         rgb_y = y
