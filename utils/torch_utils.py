@@ -357,7 +357,7 @@ class TracedModel(nn.Module):
         self.detect_layer =  self.model.model[-1][-1]
         self.model.traced = True
         
-        rand_example = torch.rand(2, 3, img_size, img_size)
+        rand_example = torch.rand(2,1, 3, img_size, img_size)
         traced_script_module = torch.jit.trace(self.model, rand_example, strict=False)
         #traced_script_module = torch.jit.script(self.model)
         traced_script_module.save("traced_model.pt")
