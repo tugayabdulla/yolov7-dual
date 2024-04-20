@@ -621,8 +621,7 @@ class Model(nn.Module):
         m = self.model[-1][-1]  # Detect()
         if isinstance(m, Detect):
             s = 256  # 2x min stride
-            dummy = torch.zeros(1, ch, s, s)
-            input_ = (dummy, dummy)
+            input_ = torch.zeros(2,1, ch, s, s)
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(input_)])  # forward
             check_anchor_order(m)
             m.anchors /= m.stride.view(-1, 1, 1)
@@ -631,8 +630,8 @@ class Model(nn.Module):
             # print('Strides: %s' % m.stride.tolist())
         if isinstance(m, IDetect):
             s = 256  # 2x min stride
-            dummy = torch.zeros(1, ch, s, s)
-            input_ = (dummy, dummy)
+            input_ = torch.zeros(2,1, ch, s, s)
+
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(input_)])  # forward
             check_anchor_order(m)
             m.anchors /= m.stride.view(-1, 1, 1)
@@ -641,8 +640,8 @@ class Model(nn.Module):
             # print('Strides: %s' % m.stride.tolist())
         if isinstance(m, IAuxDetect):
             s = 256  # 2x min stride
-            dummy = torch.zeros(1, ch, s, s)
-            input_ = (dummy, dummy)
+            input_ = torch.zeros(2,1, ch, s, s)
+
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(input_)[:4]])  # forward
             #print(m.stride)
             check_anchor_order(m)
@@ -652,8 +651,8 @@ class Model(nn.Module):
             # print('Strides: %s' % m.stride.tolist())
         if isinstance(m, IBin):
             s = 256  # 2x min stride
-            dummy = torch.zeros(1, ch, s, s)
-            input_ = (dummy, dummy)
+            input_ = torch.zeros(2,1, ch, s, s)
+
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(input_)])  # forward
             check_anchor_order(m)
             m.anchors /= m.stride.view(-1, 1, 1)
@@ -662,8 +661,8 @@ class Model(nn.Module):
             # print('Strides: %s' % m.stride.tolist())
         if isinstance(m, IKeypoint):
             s = 256  # 2x min stride
-            dummy = torch.zeros(1, ch, s, s)
-            input_ = (dummy, dummy)
+            input_ = torch.zeros(2,1, ch, s, s)
+
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(input_)])  # forward
             check_anchor_order(m)
             m.anchors /= m.stride.view(-1, 1, 1)
@@ -715,7 +714,6 @@ class Model(nn.Module):
             if self.traced:
                 if isinstance(m, Detect) or isinstance(m, IDetect) or isinstance(m, IAuxDetect) or isinstance(m, IKeypoint):
                     break
-            print(profile)
             if profile:
                 c = isinstance(m, (Detect, IDetect, IAuxDetect, IBin))
                 o = thop.profile(m, inputs=(x.copy() if c else x,), verbose=False)[0] / 1E9 * 2 if thop else 0  # FLOPS
