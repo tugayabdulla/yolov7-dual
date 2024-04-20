@@ -677,15 +677,7 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
-        if isinstance(x, torch.Tensor):
-            if (x.dim() == 4):
-                x0,x1 = x[0:1], x[1:2]
-                x = (x0, x1)
-            elif (x.dim() == 5):
-                x0, x1 = torch.unbind(x, dim=0)
-                x = (x0, x1)
-            else:
-                raise Exception(f'dim {x.dim()} is not 4 or 5')
+        x0, x1 = torch.unbind(x, dim=0)
 
         if augment:
             img_size = x.shape[-2:]  # height, width
