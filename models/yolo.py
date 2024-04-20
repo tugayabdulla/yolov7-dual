@@ -678,7 +678,7 @@ class Model(nn.Module):
 
     def forward(self, x, augment=False, profile=False):
         x0, x1 = torch.unbind(x, dim=0)
-
+        x = (x0, x1)
         if augment:
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
