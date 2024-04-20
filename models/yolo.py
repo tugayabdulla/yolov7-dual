@@ -676,9 +676,12 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
+        print(x.shape)
         x0, x1 = torch.unbind(x, dim=0)
         x = (x0, x1)
+        
         if augment:
+            print("augment")
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
             f = [None, 3, None]  # flips (2-ud, 3-lr)
@@ -725,9 +728,7 @@ class Model(nn.Module):
                 dt.append((time_synchronized() - t) * 100)
                 print('%10.1f%10.0f%10.1fms %-40s' % (o, m.np, dt[-1], m.type))
 
-            print("shape before", len(x))
             x = m(x)  # run
-            print("shape after", x.shape)
 
 
             y.append(x) # if m.i in self.save["rgb"] else None)  # save output tugaytodo
