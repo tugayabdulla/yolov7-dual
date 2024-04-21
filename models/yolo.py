@@ -676,12 +676,10 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
-        print(x.shape)
         x0, x1 = torch.unbind(x, dim=0)
         x = (x0, x1)
         
         if augment:
-            print("augment")
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
             f = [None, 3, None]  # flips (2-ud, 3-lr)

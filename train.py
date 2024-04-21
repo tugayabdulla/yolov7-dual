@@ -84,7 +84,7 @@ def train(hyp, opt, device, tb_writer=None):
     assert len(names) == nc, '%g names found for nc=%g dataset in %s' % (len(names), nc, opt.data)  # check
 
     # Model
-    pretrained = weights.endswith('.pt')
+    pretrained = weights.endswith('.pt') or opt.rgb_weights.endswith('.pt')
     if pretrained:
         print("Loading pretrained model")
         with torch_distributed_zero_first(rank):
