@@ -87,17 +87,17 @@ def train(hyp, opt, device, tb_writer=None):
     pretrained = weights.endswith('.pt') or opt.rgb_weights.endswith('.pt')
     if pretrained:
         print("Loading pretrained model")
+        weights = weights or opt.rgb_weights  # assign if not passed
         with torch_distributed_zero_first(rank):
             attempt_download(weights)  # download if not found locally
         ckpt = torch.load(weights, map_location=device)  # load checkpoint
-        ckpt_thermal = torch.load(opt.thermal_weights, map_location=device)
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (opt.cfg or hyp.get('anchors')) and not opt.resume else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
 
         if opt.rgb_weights.endswith('.pt'):
 
-            
+            ckpt_thermal = torch.load(opt.thermal_weights, map_location=device)
             state_dict_thermal = ckpt_thermal['model'].float().state_dict()
             # replace a string in the keys of the state_dict
             state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
