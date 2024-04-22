@@ -797,7 +797,12 @@ def load_mosaic(self, index):
 
 
     img_label_segments = copy_paste(img_label_segments, probability=self.hyp['copy_paste'])
-    imgs, labels4 = random_perspective(img_label_segments,
+    imgs = [x[0] for x in img_label_segments]
+    labels = img_label_segments[0][1]
+    segments = img_label_segments[0][2]
+    imgs, labels4 = random_perspective(imgs,
+                                       labels,
+                                       segments,
                                        degrees=self.hyp['degrees'],
                                        translate=self.hyp['translate'],
                                        scale=self.hyp['scale'],
@@ -868,7 +873,12 @@ def load_mosaic9(self, index):
             # img9, labels9 = replicate(img9, labels9)  # replicate
         img_label_segments.append((deepcopy(img9), deepcopy(labels9), deepcopy(segments9)))
     img_label_segments = copy_paste(img_label_segments, probability=self.hyp['copy_paste'])
-    imgs, labels9 = random_perspective(img_label_segments,
+    imgs = [x[0] for x in img_label_segments]
+    labels9 = img_label_segments[0][1]
+    segments9 = img_label_segments[0][2]
+    imgs, labels9 = random_perspective(imgs,
+                                       labels9,
+                                        segments9,
                                        degrees=self.hyp['degrees'],
                                        translate=self.hyp['translate'],
                                        scale=self.hyp['scale'],
@@ -1068,8 +1078,8 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
     return img, ratio, (dw, dh)
 
-def random_perspective(img_label_segments, degrees=10, translate=.1, scale=.1, shear=10, perspective=0.0, border=(0,0)):
-    img = img_label_segments[0][0]
+def random_perspective(imgs,labels=(), segments =(),  degrees=10, translate=.1, scale=.1, shear=10, perspective=0.0, border=(0,0)):
+    img = imgs[0]
     height = img.shape[0] + border[0] * 2  # shape(h,w,c)
     width = img.shape[1] + border[1] * 2
 
@@ -1106,16 +1116,15 @@ def random_perspective(img_label_segments, degrees=10, translate=.1, scale=.1, s
     M = T @ S @ R @ P @ C  # order of operations (right to left) is IMPORTANT
 
     return_list = []
-    for img, _, _ in img_label_segments:
+    for img in imgs:
         if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():
             if perspective:
                 img = cv2.warpPerspective(img, M, dsize=(width, height), borderValue=(114, 114, 114))
             else:
                 img = cv2.warpAffine(img, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
         return_list.append(img)
-    targets = img_label_segments[0][1]
+    targets = labels
     n = len(targets)
-    segments = img_label_segments[0][-1]
     if n:
         use_segments = any(x.any() for x in segments)
         new = np.zeros((n, 4))
