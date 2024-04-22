@@ -114,7 +114,6 @@ def test(data,
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            print(rgb_image.shape, thermal_image.shape)
             input_ = torch.stack([rgb_image, thermal_image], dim=0)
             out, train_out = model(input_, augment=augment)  # inference and training outputs
             t0 += time_synchronized() - t
