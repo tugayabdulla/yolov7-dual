@@ -102,7 +102,7 @@ def train(hyp, opt, device, tb_writer=None):
             # replace a string in the keys of the state_dict
             state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
             state_dict_thermal = {k.replace('model.', 'model.1.'): v for k, v in state_dict_thermal.items()}
-            state_dict_head = {k.replace('model.', 'model.6.'): v for k, v in state_dict_thermal.items()}
+            state_dict_head = {k.replace('model.', 'model.5.'): v for k, v in state_dict_thermal.items()}
             state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
             state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
             state_dict_head = intersect_dicts(state_dict_head, model.state_dict(), exclude=exclude)
