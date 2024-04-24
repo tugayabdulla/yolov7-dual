@@ -365,7 +365,23 @@ def train(hyp, opt, device, tb_writer=None):
         optimizer.zero_grad()
         for i, (rgb_images, thermal_images, targets, rgb_path, thermal_path, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
+
             rgb_images = rgb_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
+            import cv2
+            os.makedirs("imgs", exist_ok=True)
+            for ind, img in enumerate(rgb_images):
+                # save image
+                img = img.permute(1, 2, 0).cpu().numpy()
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(f"imgs/{ind}.jpg", img)
+
+            for ind, img in enumerate(thermal_images):
+                # save image
+                img = img.permute(1, 2, 0).cpu().numpy()
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(f"imgs/{ind}_thermal.jpg", img)
+
+            print(targets)
             thermal_images = thermal_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
             # Warmup
             if ni <= nw:
