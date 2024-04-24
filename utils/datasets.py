@@ -627,9 +627,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         img = imgs[0]
         
         if nL:
-            print("before", labels)
             labels[:, 1:5] = xyxy2xywh(labels[:, 1:5])  # convert xyxy to xywh
-            print("after", labels)
 
             labels[:, [2, 4]] /= img.shape[0]  # normalized height 0-1
             labels[:, [1, 3]] /= img.shape[1]  # normalized width 0-1
@@ -637,15 +635,18 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         if self.augment:
             # flip up-down
             if random.random() < hyp['flipud']:
-                for img in imgs:
+                for i, img in enumerate(imgs):
                     img = np.flipud(img)
+                    imgs[i] = img
                 if nL:
                     labels[:, 2] = 1 - labels[:, 2]
 
             # flip left-right
             if random.random() < hyp['fliplr']:
-                for img in imgs:
+                for i, img in enumerate(imgs):
                     img = np.fliplr(img)
+                    imgs[i] = img
+
                 if nL:
                     labels[:, 1] = 1 - labels[:, 1]
         
