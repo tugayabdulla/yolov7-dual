@@ -363,6 +363,20 @@ def train(hyp, opt, device, tb_writer=None):
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
+        import torchvision.transforms.functional as TF
+        from PIL import Image
+
+        def save_image(tensor, filename):
+            # Check if tensor is on GPU
+            if tensor.is_cuda:
+                tensor = tensor.cpu()
+
+            # Convert to PIL Image
+            image = TF.to_pil_image(tensor.squeeze(0))  # Remove batch dimension and convert to PIL Image
+
+            # Save image
+            image.save(filename)
+
         for i, (rgb_images, thermal_images, targets, rgb_path, thermal_path, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
 
@@ -371,15 +385,11 @@ def train(hyp, opt, device, tb_writer=None):
             os.makedirs("imgs", exist_ok=True)
             for ind, img in enumerate(rgb_images):
                 # save image
-                img = img.permute(1, 2, 0).cpu().numpy()
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                cv2.imwrite(f"imgs/{ind}.jpg", img)
+                save_image(img, f"imgs/{ind}_rgb.jpg")
 
             for ind, img in enumerate(thermal_images):
                 # save image
-                img = img.permute(1, 2, 0).cpu().numpy()
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                cv2.imwrite(f"imgs/{ind}_thermal.jpg", img)
+                save_image(img, f"imgs/{ind}_thermal.jpg")
 
             print(targets)
             thermal_images = thermal_images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
