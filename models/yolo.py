@@ -503,13 +503,9 @@ class IBin(nn.Module):
     def _make_grid(nx=20, ny=20):
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
-
-class BGF(nn.Module):
+class MFB(nn.Module):
     def __init__(self, in_channels):
-        super(BGF, self).__init__()
-        self.sigmoid_rgb = nn.Sigmoid()
-        self.sigmoid_thermal= nn.Sigmoid()
-        # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
+        super(MFB, self).__init__()
         self.rgb_conv1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(in_channels*2),
@@ -545,15 +541,104 @@ class BGF(nn.Module):
             nn.BatchNorm2d(in_channels*2),
         )
        
+        self.combine_trans = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels*2),
+       )
+        self.fusion_transform_MFB = nn.Sequential(
+                    nn.Conv2d(in_channels=in_channels*4,out_channels=in_channels , kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.BatchNorm2d(in_channels)
+                )
+
+
+    def forward(self, rgb_features, thermal_features):
+
+        rgb_features = self.rgb_conv1(rgb_features)
+        thermal_features = self.thermal_conv1(thermal_features)
+        rgb_features_left = self.rgb_conv2(rgb_features)
+        thermal_features_left = self.thermal_conv2(thermal_features)
+        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
+        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+
+
+
+        rgb_features_right = self.rgb_conv3(rgb_features)
+        thermal_features_right = self.thermal_conv3(thermal_features)
+
+
+
+
+
+        rgb_features_mult = rgb_features_right* thermal_features_left
+        thermal_features_mult = thermal_features_right * rgb_features_left
+
+        rgb_features = rgb_features + rgb_features_mult
+        thermal_features = thermal_features + thermal_features_mult
+
+
+        feat_add = torch.add(rgb_features, thermal_features)
+        feat_mul = torch.mul(rgb_features, thermal_features)
+        combined = self.combine_trans(feat_mul)
+        point_features = torch.cat([combined, feat_add], dim=1)
+        out = self.fusion_transform_MFB(point_features)
+
+        out = torch.sqrt(nn.ReLU(inplace=True)(out)) + torch.sqrt(nn.ReLU(inplace=True)(-out))
+        power_normed = torch.mul(out, torch.sign(out))
+
+        l2_normed = power_normed/torch.norm(power_normed)
+        #l2_normed = l2_normed.squeeze(0).transpose(0, 1)
+
+        return l2_normed
+
+class BGF(nn.Module):
+    def __init__(self, in_channels):
+        super(BGF, self).__init__()
+        self.sigmoid_rgb = nn.Sigmoid()
+        self.sigmoid_thermal= nn.Sigmoid()
+        # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
+        self.rgb_conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels*2),
+
+        )
+        
+        self.thermal_conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels*2),
+
+        )
+
+        self.rgb_conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+        )
+
+        self.thermal_conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+        )
+        
+        
+        self.rgb_conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels*2),
+        )
+
+        self.thermal_conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels*2),
+        )
+       
         self.fusion_conv = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(in_channels),
-            nn.SiLU(inplace=True),
+            nn.ReLU(inplace=True),
         )
 
 
 
-        self.concat = Concat()
 
     def forward(self, rgb_features, thermal_features):
 
@@ -579,7 +664,7 @@ class BGF(nn.Module):
         thermal_features = thermal_features + thermal_features_mult
 
 
-        concat = self.concat([rgb_features, thermal_features])  
+        concat = torch.cat([rgb_features, thermal_features], dim=1)  
         concat = self.fusion_conv(concat)
         return concat
 
