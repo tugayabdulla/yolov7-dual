@@ -557,8 +557,8 @@ class MFB(nn.Module):
         thermal_features = self.thermal_conv1(thermal_features)
         rgb_features_left = self.rgb_conv2(rgb_features)
         thermal_features_left = self.thermal_conv2(thermal_features)
-        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
-        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+        rgb_features_left = torch.sigmoid(rgb_features_left)
+        thermal_features_left = torch.sigmoid(thermal_features_left)
 
 
 
@@ -593,9 +593,6 @@ class MFB(nn.Module):
 class BGF(nn.Module):
     def __init__(self, in_channels):
         super(BGF, self).__init__()
-        self.sigmoid_rgb = nn.Sigmoid()
-        self.sigmoid_thermal= nn.Sigmoid()
-        # Convolution layer for processing concatenated features, out_channels equals in_channels for maintaining dimensions
         self.rgb_conv1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=in_channels *2 , kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(in_channels*2),
@@ -646,8 +643,8 @@ class BGF(nn.Module):
         thermal_features = self.thermal_conv1(thermal_features)
         rgb_features_left = self.rgb_conv2(rgb_features)
         thermal_features_left = self.thermal_conv2(thermal_features)
-        rgb_features_left = self.sigmoid_rgb(rgb_features_left)
-        thermal_features_left = self.sigmoid_thermal(thermal_features_left)
+        rgb_features_left = torch.sigmoid(rgb_features_left)
+        thermal_features_left = torch.sigmoid(thermal_features_left)
 
 
 
@@ -1103,7 +1100,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
-            fuse_layer = BGF(c2_)
+            fuse_layer = MFB(c2_)
             fuse_layers[f] = fuse_layer
 
 
@@ -1123,7 +1120,7 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
-    last_fusion = BGF(ch[-1])
+    last_fusion = MFB(ch[-1])
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
