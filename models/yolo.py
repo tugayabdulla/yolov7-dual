@@ -652,11 +652,8 @@ class BGF(nn.Module):
         thermal_features_right = self.thermal_conv3(thermal_features)
 
 
-
-
-
-        rgb_features_mult = rgb_features_right* thermal_features_left
-        thermal_features_mult = thermal_features_right * rgb_features_left
+        rgb_features_mult = rgb_features_right* rgb_features_left
+        thermal_features_mult = thermal_features_right * thermal_features_left
         rgb_features = rgb_features + rgb_features_mult
         thermal_features = thermal_features + thermal_features_mult
 
