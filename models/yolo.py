@@ -524,13 +524,13 @@ class BGF(nn.Module):
 
         self.rgb_conv2 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
+            nn.SiLU(inplace=True),
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
         )
 
         self.thermal_conv2 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
+            nn.SiLU(inplace=True),
             nn.Conv2d(in_channels=in_channels*2, out_channels=in_channels*2, kernel_size=3, stride=1, padding=1),
         )
         
@@ -548,7 +548,7 @@ class BGF(nn.Module):
         self.fusion_conv = nn.Sequential(
             nn.Conv2d(in_channels=in_channels*4, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(in_channels),
-            nn.ReLU(inplace=True),
+            nn.SiLU(inplace=True),
         )
 
 
