@@ -589,6 +589,94 @@ class MFB(nn.Module):
         #l2_normed = l2_normed.squeeze(0).transpose(0, 1)
 
         return l2_normed
+class ChannelAttentionModule(nn.Module):
+    def __init__(self, in_channels):
+        super(ChannelAttentionModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(in_channels, in_channels // 8, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(in_channels // 8, in_channels, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+
+class BGF_v2(nn.Module):
+    def __init__(self, in_channels):
+        super(BGF_v2, self).__init__()
+        self.rgb_conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels * 2),
+            nn.ReLU(inplace=True),
+            ChannelAttentionModule(in_channels * 2)
+        )
+        
+        self.thermal_conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels * 2),
+            nn.ReLU(inplace=True),
+            ChannelAttentionModule(in_channels * 2)
+        )
+
+        self.rgb_conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            ChannelAttentionModule(in_channels * 2)
+        )
+
+        self.thermal_conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            ChannelAttentionModule(in_channels * 2)
+        )
+        
+        self.rgb_conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels * 2),
+            nn.ReLU(inplace=True),
+            ChannelAttentionModule(in_channels * 2)
+        )
+
+        self.thermal_conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels * 2, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels * 2),
+            nn.ReLU(inplace=True),
+            ChannelAttentionModule(in_channels * 2)
+        )
+       
+        self.fusion_conv = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels * 4, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, rgb_features, thermal_features):
+        rgb_features = self.rgb_conv1(rgb_features)
+        thermal_features = self.thermal_conv1(thermal_features)
+
+        rgb_features_left = self.rgb_conv2(rgb_features)
+        thermal_features_left = self.thermal_conv2(thermal_features)
+
+        rgb_features_right = self.rgb_conv3(rgb_features)
+        thermal_features_right = self.thermal_conv3(thermal_features)
+
+        rgb_features_mult = rgb_features_right * rgb_features_left
+        thermal_features_mult = thermal_features_right * thermal_features_left
+
+        rgb_features = rgb_features + rgb_features_mult
+        thermal_features = thermal_features + thermal_features_mult
+
+        concat = torch.cat([rgb_features, thermal_features], dim=1)  
+        concat = self.fusion_conv(concat)
+        return concat
+
 
 class BGF(nn.Module):
     def __init__(self, in_channels):
@@ -1097,7 +1185,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
-            fuse_layer = BGF(c2_)
+            fuse_layer = BGF_v2(c2_)
             fuse_layers[f] = fuse_layer
 
 
@@ -1117,7 +1205,7 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
-    last_fusion = BGF(ch[-1])
+    last_fusion = BGF_v2(ch[-1])
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
