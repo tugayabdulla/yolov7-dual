@@ -136,8 +136,14 @@ def is_parallel(model):
     return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
 
 
-def intersect_dicts(da, db, exclude=()):
+def intersect_dicts(da, db, exclude=(), print_=False):
     # Dictionary intersection of matching keys and shapes, omitting 'exclude' keys, using da values
+    if print_:
+        for i in db.keys():
+            print(i)
+        print("\n\n")
+        for i in da.keys():
+            print(i)
     return {k: v for k, v in da.items() if k in db and not any(x in k for x in exclude) and v.shape == db[k].shape}
 
 

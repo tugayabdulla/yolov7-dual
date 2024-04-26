@@ -102,10 +102,19 @@ def train(hyp, opt, device, tb_writer=None):
             # replace a string in the keys of the state_dict
             state_dict = {k.replace('model.', 'model.0.'): v for k, v in state_dict.items()}
             state_dict_thermal = {k.replace('model.', 'model.1.'): v for k, v in state_dict_thermal.items()}
-            state_dict_head = {k.replace('model.1.', 'model.5.'): v for k, v in state_dict_thermal.items()}
+            state_dict_head = {}
+            for k,v in state_dict_thermal.items():
+                new_k = k.replace('model.1.', 'model.5.')
+                layer_ind = new_k.split('.')[2]
+                remaining_parts = new_k.split('.')[3:]
+                remaining_parts = ".".join(remaining_parts)
+                new_layer_ind = str(int(layer_ind) - 51)
+                new_k = "model.5." + new_layer_ind + "." + remaining_parts
+                state_dict_head[new_k] = v
+
             state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
             state_dict_thermal = intersect_dicts(state_dict_thermal, model.state_dict(), exclude=exclude)
-            state_dict_head = intersect_dicts(state_dict_head, model.state_dict(), exclude=exclude, )
+            state_dict_head = intersect_dicts(state_dict_head, model.state_dict(), exclude=exclude)
             state_dict.update(state_dict_thermal)
             state_dict.update(state_dict_head)
 
