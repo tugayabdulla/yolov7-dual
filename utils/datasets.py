@@ -646,7 +646,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 for i, img in enumerate(imgs):
                     img = np.fliplr(img)
                     imgs[i] = img
-
+                    
                 if nL:
                     labels[:, 1] = 1 - labels[:, 1]
         
