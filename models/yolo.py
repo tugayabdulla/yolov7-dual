@@ -606,6 +606,41 @@ class ChannelAttentionModule(nn.Module):
         y = self.fc(y).view(b, c, 1, 1)
         return x * y.expand_as(x)
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class EnhancedFusionModule(nn.Module):
+    def __init__(self, in_channels, inter_channels):
+        super(EnhancedFusionModule, self).__init__()
+        # Convolution layer followed by Batch Normalization and ReLU activation
+        self.conv1 = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(inter_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+        # Second convolution to generate attention map, followed by Batch Normalization
+        self.conv2 = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(in_channels)
+
+    def forward(self, rgb_features, thermal_features):
+        # Concatenate the RGB and Thermal features
+        x = torch.cat([rgb_features, thermal_features], dim=1)
+        
+        # First convolution to transform the concatenated features
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        
+        # Second convolution to generate attention map
+        attention = self.conv2(x)
+        attention = self.bn2(attention)
+        attention = torch.sigmoid(attention)
+        
+        # Apply the attention map to the transformed features
+        out = x * attention
+        return out.sum(dim=1, keepdim=True)
+
+
 class BGF_v2(nn.Module):
     def __init__(self, in_channels):
         super(BGF_v2, self).__init__()
@@ -1185,7 +1220,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
-            fuse_layer = BGF(c2_)
+            fuse_layer = EnhancedFusionModule(c2_)
             fuse_layers[f] = fuse_layer
 
 
@@ -1205,7 +1240,7 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
-    last_fusion = BGF(ch[-1])
+    last_fusion = EnhancedFusionModule(ch[-1])
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
