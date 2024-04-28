@@ -616,17 +616,17 @@ class EnhancedFusionModule(nn.Module):
         inter_channels = in_channels * 2
         self.rgb_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.rgb_bn = nn.BatchNorm2d(inter_channels)
-        self.rgb_attention = nn.Conv2d(inter_channels, inter_channels, kernel_size=1, bias=False)
-        self.rgb_attention_bn = nn.BatchNorm2d(inter_channels)
+        self.rgb_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
+        self.rgb_attention_bn = nn.BatchNorm2d(in_channels)
 
         # Define the transformation and attention generation for Thermal features
         self.thermal_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.thermal_bn = nn.BatchNorm2d(inter_channels)
-        self.thermal_attention = nn.Conv2d(inter_channels, inter_channels, kernel_size=1, bias=False)
-        self.thermal_attention_bn = nn.BatchNorm2d(inter_channels)
+        self.thermal_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
+        self.thermal_attention_bn = nn.BatchNorm2d(in_channels)
 
         # Convolution to downsize concatenated features to desired output channels
-        self.fusion_conv = nn.Conv2d(inter_channels*2, in_channels, kernel_size=1, bias=False)
+        self.fusion_conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=1, bias=False)
         self.fusion_bn = nn.BatchNorm2d(in_channels)
         self.relu = nn.ReLU(inplace=True)
 
