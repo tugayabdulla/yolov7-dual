@@ -614,33 +614,43 @@ class EnhancedFusionModule(nn.Module):
     def __init__(self, in_channels, ):
         super(EnhancedFusionModule, self).__init__()
         inter_channels = in_channels * 2
-        # Convolution layer followed by Batch Normalization and ReLU activation
-        self.conv1 = nn.Conv2d(in_channels*2, in_channels*4, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(in_channels*4)
+        self.rgb_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
+        self.rgb_bn = nn.BatchNorm2d(inter_channels)
+        self.rgb_attention = nn.Conv2d(inter_channels, inter_channels, kernel_size=1, bias=False)
+        self.rgb_attention_bn = nn.BatchNorm2d(inter_channels)
+
+        # Define the transformation and attention generation for Thermal features
+        self.thermal_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
+        self.thermal_bn = nn.BatchNorm2d(inter_channels)
+        self.thermal_attention = nn.Conv2d(inter_channels, inter_channels, kernel_size=1, bias=False)
+        self.thermal_attention_bn = nn.BatchNorm2d(inter_channels)
+
+        # Convolution to downsize concatenated features to desired output channels
+        self.fusion_conv = nn.Conv2d(inter_channels*2, in_channels, kernel_size=1, bias=False)
+        self.fusion_bn = nn.BatchNorm2d(in_channels)
         self.relu = nn.ReLU(inplace=True)
 
-        # Second convolution to generate attention map, followed by Batch Normalization
-        self.conv2 = nn.Conv2d(in_channels*4, in_channels, kernel_size=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(in_channels)
-
     def forward(self, rgb_features, thermal_features):
-        # Concatenate the RGB and Thermal features
-        x = torch.cat([rgb_features, thermal_features], dim=1)
-        
-        # First convolution to transform the concatenated features
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        
-        # Second convolution to generate attention map
-        attention = self.conv2(x)
-        attention = self.bn2(attention)
-        attention = torch.sigmoid(attention)
-        
-        # Apply the attention map to the transformed features
-        out = x * attention
-        return out.sum(dim=1, keepdim=True)
+        # Process RGB features
+        rgb_intermediate = self.rgb_conv(rgb_features)
+        rgb_intermediate = self.rgb_bn(rgb_intermediate)
+        rgb_attention_map = torch.sigmoid(self.rgb_attention_bn(self.rgb_attention(rgb_intermediate)))
+        rgb_attended = rgb_features * rgb_attention_map
 
+        # Process Thermal features
+        thermal_intermediate = self.thermal_conv(thermal_features)
+        thermal_intermediate = self.thermal_bn(thermal_intermediate)
+        thermal_attention_map = torch.sigmoid(self.thermal_attention_bn(self.thermal_attention(thermal_intermediate)))
+        thermal_attended = thermal_features * thermal_attention_map
+
+        # Concatenate attended features
+        fused_features = torch.cat([rgb_attended, thermal_attended], dim=1)
+
+        # Downsize to desired output channels
+        fused_output = self.fusion_conv(fused_features)
+        fused_output = self.fusion_bn(fused_output)
+        fused_output = self.relu(fused_output)
+        return fused_output
 
 class BGF_v2(nn.Module):
     def __init__(self, in_channels):
