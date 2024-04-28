@@ -615,12 +615,12 @@ class EnhancedFusionModule(nn.Module):
         super(EnhancedFusionModule, self).__init__()
         inter_channels = in_channels * 2
         # Convolution layer followed by Batch Normalization and ReLU activation
-        self.conv1 = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(inter_channels)
+        self.conv1 = nn.Conv2d(in_channels*2, in_channels*4, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(in_channels*4)
         self.relu = nn.ReLU(inplace=True)
 
         # Second convolution to generate attention map, followed by Batch Normalization
-        self.conv2 = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
+        self.conv2 = nn.Conv2d(in_channels*4, in_channels, kernel_size=1, bias=False)
         self.bn2 = nn.BatchNorm2d(in_channels)
 
     def forward(self, rgb_features, thermal_features):
