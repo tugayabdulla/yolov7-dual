@@ -611,8 +611,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class EnhancedFusionModule(nn.Module):
-    def __init__(self, in_channels, inter_channels):
+    def __init__(self, in_channels, ):
         super(EnhancedFusionModule, self).__init__()
+        inter_channels = in_channels * 2
         # Convolution layer followed by Batch Normalization and ReLU activation
         self.conv1 = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(inter_channels)
