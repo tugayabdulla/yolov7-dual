@@ -654,6 +654,7 @@ class EnhancedFusionModule(nn.Module):
 
 class MULT(nn.Module):
     def __init__(self, in_channels):
+        super(MULT, self).__init__()
         pass
 
     def forward(self, rgb_features, thermal_features):
