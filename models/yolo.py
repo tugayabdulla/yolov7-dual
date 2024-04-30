@@ -660,6 +660,20 @@ class MULT(nn.Module):
     def forward(self, rgb_features, thermal_features):
         return rgb_features * thermal_features
 
+class ADD(nn.Module):
+    def __init__(self, in_channels):
+        super(ADD, self).__init__()
+
+    def forward(self, rgb_features, thermal_features):
+        return rgb_features + thermal_features
+    
+class AVG(nn.Module):
+    def __init__(self, in_channels):
+        super(AVG, self).__init__()
+
+    def forward(self, rgb_features, thermal_features):
+        return (rgb_features + thermal_features) / 2
+
 class BGF_v2(nn.Module):
     def __init__(self, in_channels):
         super(BGF_v2, self).__init__()
@@ -1239,7 +1253,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
-            fuse_layer = MULT(c2_)
+            fuse_layer = ADD(c2_)
             fuse_layers[f] = fuse_layer
 
 
@@ -1259,7 +1273,7 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
-    last_fusion = MULT(ch[-1])
+    last_fusion = ADD(ch[-1])
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
