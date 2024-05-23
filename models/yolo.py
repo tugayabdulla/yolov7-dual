@@ -619,34 +619,28 @@ class EnhancedFusionModule(nn.Module):
         self.rgb_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
         self.rgb_attention_bn = nn.BatchNorm2d(in_channels)
 
-        # Define the transformation and attention generation for Thermal features
         self.thermal_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.thermal_bn = nn.BatchNorm2d(inter_channels)
         self.thermal_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
         self.thermal_attention_bn = nn.BatchNorm2d(in_channels)
 
-        # Convolution to downsize concatenated features to desired output channels
         self.fusion_conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=1, bias=False)
         self.fusion_bn = nn.BatchNorm2d(in_channels)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, rgb_features, thermal_features):
-        # Process RGB features
         rgb_intermediate = self.rgb_conv(rgb_features)
         rgb_intermediate = self.rgb_bn(rgb_intermediate)
         rgb_attention_map = torch.sigmoid(self.rgb_attention_bn(self.rgb_attention(rgb_intermediate)))
         rgb_attended = rgb_features * rgb_attention_map
 
-        # Process Thermal features
         thermal_intermediate = self.thermal_conv(thermal_features)
         thermal_intermediate = self.thermal_bn(thermal_intermediate)
         thermal_attention_map = torch.sigmoid(self.thermal_attention_bn(self.thermal_attention(thermal_intermediate)))
         thermal_attended = thermal_features * thermal_attention_map
 
-        # Concatenate attended features
         fused_features = torch.cat([rgb_attended, thermal_attended], dim=1)
 
-        # Downsize to desired output channels
         fused_output = self.fusion_conv(fused_features)
         fused_output = self.fusion_bn(fused_output)
         fused_output = self.relu(fused_output)
@@ -1253,7 +1247,7 @@ def parse_model_parts(part, ch, d):
             c2 = ch[f]
         if f != -1 and isinstance(f, int) and f > 0 and f < len_ch:
             c2_ = ch[f]
-            fuse_layer = EnhancedFusionModule(c2_)
+            fuse_layer = BGF_v2(c2_)
             fuse_layers[f] = fuse_layer
 
 
@@ -1273,7 +1267,7 @@ def parse_model_parts(part, ch, d):
 def parse_model_new(d, ch):
     backbone_rgb, save_rgb, _,_ = parse_model_parts('backbone', deepcopy(ch), d)
     backbone_thermal, save_thermal, ch,_ = parse_model_parts('backbone', deepcopy(ch), d)
-    last_fusion = EnhancedFusionModule(ch[-1])
+    last_fusion = BGF_v2(ch[-1])
 
     head, save_head, _,fuse_layers = parse_model_parts('head', ch[1:], d)
     fuse_layers[-1] = last_fusion
