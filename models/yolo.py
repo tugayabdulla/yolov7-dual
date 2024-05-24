@@ -616,13 +616,11 @@ class EnhancedFusionModule(nn.Module):
         inter_channels = in_channels * 2
         self.rgb_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.rgb_bn = nn.BatchNorm2d(inter_channels)
-        self.relu_rgb = nn.ReLU(inplace=True)
         self.rgb_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
         self.rgb_attention_bn = nn.BatchNorm2d(in_channels)
 
         self.thermal_conv = nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False)
         self.thermal_bn = nn.BatchNorm2d(inter_channels)
-        self.relu_thermal = nn.ReLU(inplace=True)
         self.thermal_attention = nn.Conv2d(inter_channels, in_channels, kernel_size=1, bias=False)
         self.thermal_attention_bn = nn.BatchNorm2d(in_channels)
 
@@ -633,13 +631,11 @@ class EnhancedFusionModule(nn.Module):
     def forward(self, rgb_features, thermal_features):
         rgb_intermediate = self.rgb_conv(rgb_features)
         rgb_intermediate = self.rgb_bn(rgb_intermediate)
-        rgb_intermediate = self.relu_rgb(rgb_intermediate)
         rgb_attention_map = torch.sigmoid(self.rgb_attention_bn(self.rgb_attention(rgb_intermediate)))
         rgb_attended = rgb_features * rgb_attention_map
 
         thermal_intermediate = self.thermal_conv(thermal_features)
         thermal_intermediate = self.thermal_bn(thermal_intermediate)
-        thermal_intermediate = self.relu_thermal(thermal_intermediate)
         thermal_attention_map = torch.sigmoid(self.thermal_attention_bn(self.thermal_attention(thermal_intermediate)))
         thermal_attended = thermal_features * thermal_attention_map
 
