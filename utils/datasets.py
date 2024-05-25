@@ -125,6 +125,34 @@ class _RepeatSampler(object):
             yield from iter(self.sampler)
 
 
+class LoadImagesDouble:
+    def __init__(self, rgb_path, thermal_path, img_size=640, stride=32):
+        rgb_path= str(Path(rgb_path).absolute())
+        thermal_path = str(Path(thermal_path).absolute())
+
+        self.img_size = img_size
+        self.stride = stride
+        self.paths = [rgb_path, thermal_path]
+        self.images_done = False
+
+    def __iter__(self):
+        self.count = 0
+        return self
+    def __next__(self):
+        if self.images_done:
+            raise StopIteration
+        images = []
+        for path in self.paths:
+            img0 = cv2.imread(path)
+            assert img0 is not None, 'Image Not Found ' + path
+            img = letterbox(img0, self.img_size, stride=self.stride)[0]
+            img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+            img = np.ascontiguousarray(img)
+            images.append([path, img, img0])
+        return images
+
+
+
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
         p = str(Path(path).absolute())  # os-agnostic absolute path
